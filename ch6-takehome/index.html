@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>INF120 Chapter 6 Take-Home: Functions in Files</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --ink: #1c1c1e; --muted: #5b5b60; --line: #dedcd6;
+    --gold: #c99a06; --gold-soft: #fbf1cf; --black: #111;
+    --ok: #2e7d4f; --ok-soft: #e4f3ea; --bad: #b3261e; --bad-soft: #fbe6e4;
+    --ed-bg: #1e1e1e; --ed-gutter: #858585; --ed-ink: #d4d4d4; --ed-cur: rgba(255, 204, 0, 0.20);
+    --ed-add: rgba(80, 200, 120, 0.13);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header.top { background: var(--black); color: #fff; padding: 18px 20px 14px; }
+  header.top .wrap { max-width: 1180px; margin: 0 auto; }
+  header.top .course { color: var(--gold); font-weight: 700; letter-spacing: .06em; font-size: 13px; text-transform: uppercase; }
+  header.top h1 { margin: 2px 0 2px; font-size: 26px; line-height: 1.2; }
+  header.top .due { color: #cfcfcf; font-size: 14px; }
+  .progress { height: 4px; background: #333; }
+  .progress > div { height: 100%; width: 0; background: var(--gold); transition: width .35s ease; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 18px 20px 110px; display: grid; grid-template-columns: 230px 1fr; gap: 26px; }
+  nav.steps ol { list-style: none; margin: 0; padding: 0; position: sticky; top: 14px; }
+  nav.steps li { margin: 0 0 4px; }
+  nav.steps button { width: 100%; text-align: left; border: 0; background: transparent; padding: 7px 10px; border-radius: 8px; color: var(--muted); font: inherit; font-size: 14px; cursor: pointer; display: flex; gap: 9px; align-items: baseline; }
+  nav.steps button .n { font-variant-numeric: tabular-nums; font-weight: 700; color: #9a9aa0; min-width: 18px; }
+  nav.steps button:hover { background: #ecebe6; color: var(--ink); }
+  nav.steps button.active { background: var(--panel); color: var(--ink); box-shadow: 0 0 0 1px var(--line); font-weight: 600; }
+  nav.steps button.active .n { color: var(--gold); }
+  nav.steps button.done .n { color: var(--ok); }
+  nav.steps .group { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #8a8a90; margin: 14px 10px 4px; }
+  .layout > main, .layout > nav { min-width: 0; }
+  header.top h1 code { white-space: normal; }
+  main section { display: none; }
+  main section.show { display: block; animation: fadein .25s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  h2 { font-size: 24px; margin: 0 0 4px; }
+  .kicker { color: var(--gold); font-weight: 700; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+  h3 { font-size: 18px; margin: 22px 0 6px; }
+  p { margin: 8px 0; }
+  code { font-family: var(--mono); font-size: .92em; background: #ecebe6; padding: 1px 5px; border-radius: 4px; }
+  pre { font-family: var(--mono); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 14px 0; }
+  .note { border-left: 4px solid var(--gold); background: var(--gold-soft); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; }
+  .see { border-left: 4px solid var(--ok); background: var(--ok-soft); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; }
+  .see > b:first-child, .note > b:first-child, .warn > b:first-child { display: block; margin-bottom: 4px; }
+  .warn { border-left: 4px solid var(--bad); background: var(--bad-soft); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; }
+  pre.out { background: #151515; color: #e6e6e6; padding: 10px 12px; border-radius: 8px; overflow-x: auto; font-size: 13.5px; margin: 8px 0; white-space: pre; }
+  pre.tree { background: var(--panel); border: 1px solid var(--line); padding: 10px 12px; border-radius: 8px; font-size: 14px; overflow-x: auto; }
+  pre.snip { background: var(--ed-bg); color: var(--ed-ink); padding: 10px 12px; border-radius: 8px; font-size: 13.5px; overflow-x: auto; margin: 8px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; background: var(--panel); font-size: 15px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: #efeee9; }
+  ul, ol.plain { padding-left: 22px; margin: 8px 0; }
+  li { margin: 3px 0; }
+  a { color: #8a6500; font-weight: 600; }
+  .dl { display: inline-flex; gap: 8px; align-items: center; background: var(--black); color: #fff; text-decoration: none; padding: 9px 14px; border-radius: 9px; font-weight: 600; margin: 4px 8px 4px 0; }
+  .dl:hover { background: #333; }
+  .pts { float: right; background: var(--black); color: var(--gold); font-weight: 700; font-size: 13px; padding: 3px 9px; border-radius: 999px; }
+  .checks { list-style: none; padding-left: 0; }
+  .checks li { display: flex; gap: 9px; align-items: flex-start; }
+  .checks input { margin-top: 5px; accent-color: var(--ok); width: 16px; height: 16px; }
+
+  /* ---------- lab: a VS Code window (colors sampled from the instructor's VS Code) ---------- */
+  .labctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0 8px; font-size: 14px; }
+  .labctl .lbl { color: var(--muted); margin-right: 2px; }
+  .labctl button, .labctl select { font: inherit; font-size: 14px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); padding: 6px 12px; cursor: pointer; }
+  .labctl button.run { background: var(--black); color: #fff; border-color: var(--black); font-weight: 600; }
+  .labctl button.run::before { content: ""; display: inline-block; border-left: 8px solid #fff; border-top: 5px solid transparent; border-bottom: 5px solid transparent; margin-right: 8px; }
+  .labctl button:disabled { opacity: .45; cursor: default; }
+  .labctl .spd { margin-left: auto; display: flex; gap: 6px; align-items: center; color: var(--muted); }
+
+  .vsc { --vbg: #2f2e3c; --vdark: #272532; --vtabin: #181824; --vtitle: #282634; --vline: #1f1e2a;
+         --vtext: #c9c9d3; --vdim: #8d8b9c; --vnum: #4e4d5c; --vnumact: #c3c3cc; --vacc: #8aa2ff;
+         border-radius: 10px; overflow: hidden; background: var(--vbg); color: var(--vtext);
+         box-shadow: 0 10px 30px rgba(0,0,0,.28), 0 0 0 1px #000; font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .vsc .titlebar { height: 34px; display: grid; grid-template-columns: 1fr minmax(0, 340px) 1fr; align-items: center; background: var(--vtitle); padding: 0 12px; border-bottom: 1px solid var(--vline); }
+  .vsc .lights { display: flex; gap: 8px; }
+  .vsc .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .vsc .lights i:nth-child(1) { background: #ff5f57; } .vsc .lights i:nth-child(2) { background: #febc2e; } .vsc .lights i:nth-child(3) { background: #28c840; }
+  .vsc .cmdc { height: 22px; border-radius: 6px; background: #353445; border: 1px solid #44435a; color: var(--vdim); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; overflow: hidden; }
+  .vsc .body { display: grid; grid-template-columns: 44px minmax(0, 1fr); }
+  .vsc .actbar { background: var(--vdark); display: flex; flex-direction: column; align-items: center; gap: 18px; padding-top: 12px; border-right: 1px solid var(--vline); }
+  .vsc .actbar svg { width: 22px; height: 22px; stroke: #77768a; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .vsc .actbar .on { position: relative; }
+  .vsc .actbar .on svg { stroke: #e3e3ea; }
+  .vsc .actbar .on::before { content: ""; position: absolute; left: -11px; top: -3px; bottom: -3px; width: 2px; background: var(--vacc); }
+  .vsc .side { background: var(--vdark); border-right: 1px solid var(--vline); min-width: 0; }
+  .vsc .side .h { font-size: 11px; letter-spacing: .04em; color: var(--vdim); padding: 9px 12px 6px 18px; }
+  .vsc .side .folder { font-size: 11px; font-weight: 700; color: #d7d7e0; padding: 3px 12px; display: flex; gap: 5px; align-items: center; }
+  .vsc .side .file { padding: 3px 12px 3px 30px; display: flex; gap: 6px; align-items: center; color: #c5c5d0; white-space: nowrap; }
+  .vsc .side .file.sel { background: #3a3950; color: #fff; }
+  .vsc .pyi { width: 14px; height: 14px; flex: none; }
+  .vsc .groups { display: grid; grid-template-columns: 1fr 1fr; min-width: 0; }
+  .vsc .grp { min-width: 0; display: flex; flex-direction: column; border-left: 1px solid var(--vline); }
+  .vsc .grp:first-child { border-left: 0; }
+  .vsc .tabs { display: flex; align-items: stretch; background: var(--vdark); height: 35px; }
+  .vsc .tabx { display: flex; align-items: center; gap: 7px; padding: 0 12px; background: var(--vtabin); color: var(--vdim); border-right: 1px solid var(--vline); white-space: nowrap; position: relative; }
+  .vsc .tabx.act { background: var(--vbg); color: #ececf2; }
+  .vsc .grp.focus .tabx.act::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--vacc); }
+  .vsc .tabx .x { color: #a3a2b4; font-size: 13px; margin-left: 4px; }
+  .vsc .tabx .badge { font: 600 11px/1 var(--mono); padding: 3px 7px; border-radius: 999px; background: #574b16; color: #ffd75e; opacity: 0; transition: opacity .2s; }
+  .vsc .tabx .badge.on { opacity: 1; }
+  .vsc .gact { margin-left: auto; display: flex; align-items: center; gap: 2px; padding-right: 8px; }
+  .vsc .playbtn { position: relative; display: flex; align-items: center; gap: 1px; background: none; border: 0; border-radius: 5px; padding: 4px 5px; cursor: pointer; color: #d8d8e2; }
+  .vsc .playbtn:hover, .vsc .playbtn:focus-visible { background: #3d3c50; outline: none; }
+  .vsc .playbtn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linejoin: round; }
+  .vsc .playbtn .chev { width: 10px; height: 10px; }
+  .vsc .playbtn .tip { position: absolute; top: 30px; right: -6px; background: #252433; border: 1px solid #47465c; color: #e5e5ec; font-size: 12px; padding: 3px 8px; border-radius: 4px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 3; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .vsc .playbtn:hover .tip, .vsc .playbtn:focus-visible .tip, .vsc .playbtn.hint .tip { opacity: 1; }
+  .vsc .playbtn:disabled { cursor: default; opacity: .55; }
+  .vsc .gmore { color: #a3a2b4; padding: 0 6px; letter-spacing: 1px; }
+  .vsc .crumbs { height: 22px; display: flex; align-items: center; gap: 6px; padding: 0 14px; color: var(--vdim); font-size: 12.5px; background: var(--vbg); }
+  .vsc .code { margin: 0; padding: 4px 0 10px; font: 13px/1.62 var(--mono); color: var(--vtext); background: var(--vbg); max-height: 320px; overflow: auto; flex: 1; }
+  .vsc .ln { display: flex; white-space: pre; padding-right: 10px; border-left: 3px solid transparent; }
+  .vsc .ln .g { display: inline-block; width: 40px; text-align: right; padding-right: 16px; color: var(--vnum); user-select: none; flex: none; }
+  .vsc .ln.add { background: rgba(80, 200, 120, 0.12); }
+  .vsc .ln.add .g { color: #6fd18f; }
+  .vsc .ln.cur { background: rgba(255, 204, 0, 0.20); border-left-color: #ffcc00; }
+  .vsc .ln.cur .g { color: var(--vnumact); }
+  .vsc .ln.appear { animation: appear .3s ease both; }
+  @keyframes appear { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+  .vsc .pill { display: inline-block; margin-left: 12px; font: 700 11.5px/1.5 system-ui, sans-serif; padding: 0 8px; border-radius: 999px; vertical-align: 1px; animation: appear .2s ease both; }
+  .vsc .pill.t { background: #1f5f3a; color: #b9f5cf; }
+  .vsc .pill.f { background: #6b1d18; color: #ffc9c4; }
+  /* syntax colors from the instructor's theme */
+  .vsc .k { color: #c8e6f2; font-weight: 600; } .vsc .kd { color: #d23c32; font-weight: 600; }
+  .vsc .s { color: #e6cf9c; } .vsc .c { color: #75748a; font-style: italic; } .vsc .num { color: #6d93ad; }
+  .vsc .fn { color: #f5d28d; } .vsc .bi { color: #f0d890; } .vsc .dn { color: #c792ea; } .vsc .op { color: #d8693f; }
+  .vsc .br { color: #eedf8e; } .vsc .cb { color: #c792ea; } .vsc .fp { color: #d23c32; }
+  .vsc .panel { border-top: 1px solid #45445a; background: var(--vbg); }
+  .vsc .ptabs { display: flex; align-items: center; gap: 22px; padding: 0 14px; height: 33px; font-size: 11px; letter-spacing: .03em; color: var(--vdim); }
+  .vsc .ptabs .on { color: #ececf2; border-bottom: 1px solid var(--vacc); padding: 6px 0 5px; }
+  .vsc .ptabs .pr { margin-left: auto; display: flex; gap: 14px; align-items: center; color: #c5c5d0; letter-spacing: 0; font-size: 12px; }
+  .vsc .terminal pre { margin: 0; padding: 4px 16px 12px; color: #dcdce4; font: 13px/1.5 var(--mono); min-height: 96px; max-height: 175px; overflow: auto; white-space: pre-wrap; }
+  .vsc .terminal .prompt { color: #8ac6f2; } .vsc .terminal .cmd { color: #f0c674; }
+  .vsc .terminal .fresh { color: #fff; background: rgba(255,255,255,.07); }
+  .vsc .statusbar { height: 24px; display: flex; align-items: center; gap: 16px; padding: 0 10px; background: var(--vdark); color: #a7a5b2; font-size: 12px; border-top: 1px solid var(--vline); white-space: nowrap; overflow: hidden; }
+  .vsc .statusbar .r { margin-left: auto; display: flex; gap: 16px; }
+  .narr { margin: 8px 0 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--gold); border-radius: 8px; padding: 9px 14px; min-height: 44px; font-size: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+  .narr .what { font-weight: 700; } .narr .why { color: #333; }
+  .clipbox { margin: 10px 0 16px; }
+  .clipbox summary { cursor: pointer; font-weight: 600; color: #8a6500; }
+  .clipbox video { display: block; width: 100%; margin-top: 10px; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.25); background: #000; }
+  .clipbox .cap { color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+  footer.nav { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.96); border-top: 1px solid var(--line); backdrop-filter: blur(6px); }
+  footer.nav .wrap { max-width: 1180px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 12px; }
+  footer.nav button { font: inherit; font-weight: 600; border-radius: 9px; padding: 9px 18px; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+  footer.nav button.next { background: var(--black); color: #fff; border-color: var(--black); margin-left: auto; }
+  footer.nav button:disabled { opacity: .4; cursor: default; }
+  footer.nav .where { color: var(--muted); font-size: 14px; }
+
+  @media (max-width: 900px) {
+    .vsc .body { grid-template-columns: minmax(0, 1fr); } .vsc .actbar { display: none; } .vsc .hide-sm { display: none; }
+    .layout { grid-template-columns: 1fr; }
+    nav.steps ol { position: static; display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; }
+    nav.steps li { flex: none; }
+    nav.steps .group, nav.steps button .t { display: none; }
+    nav.steps button { padding: 6px 11px; }
+    .vsc .groups { grid-template-columns: 1fr; }
+    .vsc .grp { border-left: 0; border-top: 1px solid var(--vline); }
+    table { display: block; overflow-x: auto; }
+    td code { word-break: break-word; }
+    header.top h1 { font-size: 21px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="course">INF120 &middot; Chapter 6, Day 3 &middot; Take-Home Assignment</div>
+    <h1>Functions in Files: Modules and <code style="background:#333;color:#ffd75e">if __name__ == "__main__":</code></h1>
+    <div class="due">Due before class on Tuesday, December 1. Submit one zip file of your <code style="background:#333;color:#eee">.py</code> files.</div>
+  </div>
+</header>
+<div class="progress"><div id="bar"></div></div>
+
+<div class="layout">
+  <nav class="steps" aria-label="Steps"><ol id="stepnav"></ol></nav>
+  <main id="main">
+
+<!-- ======================================================= 1 -->
+<section data-title="Before you start" data-group="Start">
+  <div class="kicker">Step 1</div>
+  <h2>Before you start</h2>
+  <p>So far every function you wrote lived in a notebook cell. Real Python programs are <code>.py</code> files, and their functions usually live in a <b>different file</b> from the main program. In this assignment you write programs that way, in VS Code.</p>
+  <h3>You will learn</h3>
+  <ul>
+    <li>how to put functions in a <b>module</b> (a <code>.py</code> file of definitions) and use them from <code>main.py</code> with <code>import</code>;</li>
+    <li>why test code in a module causes a problem when the module is imported;</li>
+    <li>what the variable <code>__name__</code> is, and how <code>if __name__ == "__main__":</code> fixes the problem.</li>
+  </ul>
+  <h3>Get ready</h3>
+  <ol class="plain">
+    <li>Install Python and VS Code with the setup handout, and run its <code>hello.py</code> check. Keep <code>hello.py</code>: it is Task 1.<br>
+      <a class="dl" href="INF120_Python_VSCode_Setup_Handout.docx" download>Setup handout (.docx)</a></li>
+    <li>Download and unzip the starter folder. It contains <code>ch6_parking</code>, <code>ch6_paint</code>, and <code>ch6_grades</code>, each with two files.<br>
+      <a class="dl" href="ch6_takehome_starter.zip" download>Starter folder (.zip)</a></li>
+    <li>Move <code>hello.py</code> into the <code>ch6_takehome</code> folder.</li>
+    <li>Put <code>ch6_takehome</code> in a folder whose path has <b>no spaces</b>, for example <code>C:\INF120</code> on Windows or <code>INF120</code> in your home folder on a Mac. On some computers the Run button fails when the path has a space (see Step 10).</li>
+    <li>Open a project folder with <b>File &gt; Open Folder</b>. The first time, VS Code asks if you trust the authors of the files. They are your files: click <b>Yes, I trust the authors</b>.<br>
+      <img src="clips/trust_dialog.jpg" alt="VS Code dialog: Do you trust the authors of the files in this folder? with the buttons No, I don't trust the authors and Yes, I trust the authors" style="max-width:420px;width:100%;border-radius:8px;margin-top:8px;box-shadow:0 4px 14px rgba(0,0,0,.2)"></li>
+  </ol>
+  <div class="note"><b>How to use this page</b>
+    Steps 2 to 6 are a guided walkthrough. Each one shows a VS Code window, with the two files side by side. Click a <b>Run</b> button (or the &#9655; at the top of a file, as in VS Code) to watch Python run the file line by line: the yellow bar is the line running now, and the Terminal shows the output. Use <b>Skip</b> to jump to the end, and the speed menu to slow down. Under each window, <b>Watch it in real VS Code</b> plays a short recording of the same run. Then type the same code in your own files and run it in VS Code. Type the code yourself; typing it is part of learning it.</div>
+  <div class="warn"><b>Install not working?</b> Try the help in Step 10 first. If you still can't install Python, you can do the whole assignment in Colab: Step 10 shows how.</div>
+</section>
+
+<!-- ======================================================= 2 -->
+<section data-title="A program in two files" data-group="Walkthrough" data-lab="v1" data-runs="main.py" data-appear="1">
+  <div class="kicker">Step 2 &middot; Walkthrough</div>
+  <h2>A program in two files</h2>
+  <p>Open the <code>ch6_parking</code> folder in VS Code (<b>File &gt; Open Folder</b>). Type the code below into the two files. You wrote these parking functions on Day 1; now they live in their own file.</p>
+  <ul>
+    <li><b>Module</b>: <code>parking.py</code> holds <b>definitions</b>: the functions.</li>
+    <li><b>Main program</b>: <code>main.py</code> uses <code>import parking</code>, then calls the functions as <code>parking.parking_fee(hours)</code>, like <code>import math</code> and <code>math.sqrt(16)</code>.</li>
+  </ul>
+  <div class="labhost"></div>
+  <p>Click <b>Run main.py</b> and watch the yellow bar. At <code>import parking</code> it jumps into <code>parking.py</code> and runs that file from top to bottom. Each <code>def</code> only <b>stores</b> a function; the body runs later, when <code>main.py</code> calls it.</p>
+  <div class="see"><b>What you should see</b> Run <code>main.py</code> in VS Code (open it, then click the Run Python File triangle in the top-right corner). The Terminal shows:
+    <pre class="out" data-sample="parking_main"></pre>
+    If you see <code>ModuleNotFoundError: No module named 'parking'</code>, the two files are not in the same folder.</div>
+  <details class="clipbox"><summary>Watch it in real VS Code (7 seconds)</summary>
+    <video controls muted playsinline preload="metadata" src="clips/step2_run_main.mp4"></video>
+    <div class="cap">Recorded in VS Code on a Mac. Your colors, prompt, and folder path will look different; the output will be the same.</div></details>
+</section>
+
+<!-- ======================================================= 3 -->
+<section data-title="Tests in the module" data-group="Walkthrough" data-lab="v2" data-runs="parking.py,main.py">
+  <div class="kicker">Step 3 &middot; Walkthrough</div>
+  <h2>The problem: tests in the module</h2>
+  <p>While you write a module, you want to test its functions. Add the green lines to the bottom of <code>parking.py</code>.</p>
+  <div class="labhost"></div>
+  <p>First click <b>Run parking.py</b>: the tests run, which is what you want. Then click <b>Run main.py</b>: the tests run <b>again</b>, during <code>import parking</code>, before the program's own output. That's the problem: <code>import</code> runs every statement in the module that isn't inside a <code>def</code>.</p>
+  <div class="see"><b>What you should see</b> In VS Code, running <code>main.py</code> now prints the three test lines first, then the week's fees.</div>
+  <details class="clipbox"><summary>Watch it in real VS Code (12 seconds)</summary>
+    <video controls muted playsinline preload="metadata" src="clips/step3_tests_in_module.mp4"></video>
+    <div class="cap">Recorded in VS Code on a Mac. Your colors, prompt, and folder path will look different; the output will be the same.</div></details>
+</section>
+
+<!-- ======================================================= 4 -->
+<section data-title="The variable __name__" data-group="Walkthrough" data-lab="v2" data-runs="parking.py,main.py">
+  <div class="kicker">Step 4 &middot; Walkthrough</div>
+  <h2>The variable <code>__name__</code></h2>
+  <p>Python gives every file a built-in variable named <code>__name__</code> (two underscores on each side). Its value depends on <b>how</b> the file runs:</p>
+  <table>
+    <tr><th>How the file runs</th><th>Value of <code>__name__</code></th></tr>
+    <tr><td>You run the file directly (Run Python File)</td><td><code>"__main__"</code></td></tr>
+    <tr><td>Another file imports it (<code>import parking</code>)</td><td>the module's name: <code>"parking"</code></td></tr>
+  </table>
+  <p>Run both files again and watch the yellow label on each file's tab: it shows the value of <code>__name__</code> for the file that is running. When you run <code>parking.py</code>, it is <code>"__main__"</code>. When <code>main.py</code> imports it, the same file runs with <code>"parking"</code>.</p>
+  <div class="labhost"></div>
+</section>
+
+<!-- ======================================================= 5 -->
+<section data-title="The main guard" data-group="Walkthrough" data-lab="v3" data-runs="parking.py,main.py">
+  <div class="kicker">Step 5 &middot; Walkthrough</div>
+  <h2>The fix: <code>if __name__ == "__main__":</code></h2>
+  <p>Put the tests under an <code>if</code> that checks <code>__name__</code>. Indent the test lines under it. This <code>if</code> is called the <b>main guard</b>.</p>
+  <pre class="snip">if __name__ == "__main__":
+    statements      # run only when this file is run directly</pre>
+  <div class="labhost"></div>
+  <p>Run both files. At the <code>if</code> line, a label shows whether the condition is <b>True</b> or <b>False</b>. Running <code>parking.py</code>: True, so the tests run. Running <code>main.py</code>: <code>import</code> runs <code>parking.py</code> with <code>__name__</code> set to <code>"parking"</code>, the condition is False, and the tests are skipped.</p>
+  <div class="see"><b>What you should see</b> Running <code>parking.py</code> prints only the tests:
+    <pre class="out" data-sample="parking_mod"></pre>
+    Running <code>main.py</code> prints only the program's output, with no test lines.</div>
+  <details class="clipbox"><summary>Watch it in real VS Code (12 seconds)</summary>
+    <video controls muted playsinline preload="metadata" src="clips/step5_main_guard.mp4"></video>
+    <div class="cap">Recorded in VS Code on a Mac. Your colors, prompt, and folder path will look different; the output will be the same.</div></details>
+</section>
+
+<!-- ======================================================= 6 -->
+<section data-title="The guard in main.py" data-group="Walkthrough" data-lab="v4" data-runs="main.py,parking.py">
+  <div class="kicker">Step 6 &middot; Walkthrough</div>
+  <h2>The guard in <code>main.py</code> too</h2>
+  <p>Professional Python files follow one pattern: imports and definitions at the top, and the code to run under <code>if __name__ == "__main__":</code>. Put <code>main.py</code>'s program under the guard as well (green lines), and indent it.</p>
+  <div class="labhost"></div>
+  <p>Nothing changes when you run <code>main.py</code>: its <code>__name__</code> is <code>"__main__"</code>, so its program runs. The guard matters if another file ever imports <code>main.py</code>: then its program won't start by itself.</p>
+  <div class="note"><b>Your parking files are now Task 2.</b> Run both files in VS Code one more time and compare with the outputs in Steps 2 and 5.</div>
+  <details class="clipbox"><summary>Watch it in real VS Code (7 seconds)</summary>
+    <video controls muted playsinline preload="metadata" src="clips/step6_guard_in_main.mp4"></video>
+    <div class="cap">Recorded in VS Code on a Mac. Your colors, prompt, and folder path will look different; the output will be the same.</div></details>
+</section>
+
+<!-- ======================================================= 7 -->
+<section data-title="Tasks 1 and 2" data-group="Your work">
+  <div class="kicker">Step 7 &middot; Graded tasks</div>
+  <h2>Tasks 1 and 2</h2>
+  <div class="card"><span class="pts">10 points</span>
+    <h3 style="margin-top:0">Task 1. Setup check</h3>
+    <p><code>hello.py</code> from the setup handout, in your <code>ch6_takehome</code> folder. It must run in VS Code.</p>
+  </div>
+  <div class="card"><span class="pts">25 points</span>
+    <h3 style="margin-top:0">Task 2. Parking project</h3>
+    <p>Your <code>ch6_parking/parking.py</code> and <code>ch6_parking/main.py</code> from the walkthrough:</p>
+    <ul>
+      <li><code>parking.py</code> defines <code>parking_fee(hours)</code> and <code>week_total(hours_list)</code>, and has tests under <code>if __name__ == "__main__":</code>.</li>
+      <li><code>main.py</code> imports <code>parking</code> and runs its program under <code>if __name__ == "__main__":</code>.</li>
+    </ul>
+    <b>Check your work</b>
+    <ul class="checks" data-key="t2">
+      <li><input type="checkbox"> Running <code>parking.py</code> prints the three test lines and nothing else.</li>
+      <li><input type="checkbox"> Running <code>main.py</code> prints the week's fees and total, and no test lines.</li>
+      <li><input type="checkbox"> Every function has a comment that says what it does.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================================================= 8 -->
+<section data-title="Task 3: Paint module" data-group="Your work">
+  <div class="kicker">Step 8 &middot; Graded task</div>
+  <h2>Task 3. Paint module <span class="pts" style="float:none;vertical-align:4px">30 points</span></h2>
+  <p>Work in the <code>ch6_paint</code> folder. You wrote these functions on Day 1; now put them in a module.</p>
+  <h3><code>paint.py</code> (the module)</h3>
+  <ul>
+    <li>A constant <code>SQ_FT_PER_GALLON = 400</code> (one gallon of paint covers 400 square feet).</li>
+    <li><code>wall_area(length, width, height)</code> returns the area of the four walls: 2 &times; (length + width) &times; height.</li>
+    <li><code>gallons_needed(length, width, height)</code> returns the gallons needed for the four walls. It must <b>call</b> <code>wall_area</code>.</li>
+    <li>At least three test calls under <code>if __name__ == "__main__":</code>. Check the results by hand.</li>
+  </ul>
+  <h3><code>main.py</code> (the main program)</h3>
+  <ul>
+    <li>Import <code>paint</code>. Under <code>if __name__ == "__main__":</code>, read a room's length, width, and wall height with <code>input()</code>.</li>
+    <li>Print the wall area (no decimals) and the gallons of paint needed (2 decimal places), using the functions from <code>paint</code>.</li>
+  </ul>
+  <b>Sample run of <code>main.py</code></b>
+  <pre class="out" data-sample="paint_main"></pre>
+  <b>Check your work</b>
+  <ul class="checks" data-key="t3">
+    <li><input type="checkbox"> Running <code>paint.py</code> prints your test results and does not ask for input.</li>
+    <li><input type="checkbox"> Running <code>main.py</code> asks for the three values and prints the two results, with no test lines.</li>
+    <li><input type="checkbox"> A 10 ft &times; 10 ft room with 8 ft walls needs 0.80 gallons.</li>
+    <li><input type="checkbox"> <code>main.py</code> calls the functions as <code>paint.wall_area(...)</code> and <code>paint.gallons_needed(...)</code>.</li>
+    <li><input type="checkbox"> Your code has comments.</li>
+  </ul>
+</section>
+
+<!-- ======================================================= 9 -->
+<section data-title="Task 4: Grades module" data-group="Your work">
+  <div class="kicker">Step 9 &middot; Graded task</div>
+  <h2>Task 4. Grades module <span class="pts" style="float:none;vertical-align:4px">35 points</span></h2>
+  <p>Work in the <code>ch6_grades</code> folder. Do not use <code>sum()</code>, <code>min()</code>, or <code>max()</code>.</p>
+  <h3><code>grades.py</code> (the module)</h3>
+  <ul>
+    <li><code>average(scores)</code> returns the average of a list of scores. Use a loop.</li>
+    <li><code>min_max(scores)</code> returns the lowest and highest score <b>as a tuple</b> <code>(low, high)</code>, found in <b>one</b> loop.</li>
+    <li><code>letter_grade(avg)</code> returns the letter grade: A for 90 or more, B for 80 or more, C for 70 or more, D for 60 or more, F below 60.</li>
+    <li>Test calls for all three functions under <code>if __name__ == "__main__":</code>.</li>
+  </ul>
+  <h3><code>main.py</code> (the main program)</h3>
+  <ul>
+    <li>Import <code>grades</code>. Under <code>if __name__ == "__main__":</code>, read scores one at a time into a list until the user enters <code>-1</code>.</li>
+    <li>Print how many scores were entered, the average (2 decimal places) with its letter grade, the lowest score, and the highest score. Get the lowest and highest with one call to <code>grades.min_max</code>.</li>
+    <li>If the first score is <code>-1</code>, print <code>No scores entered.</code></li>
+  </ul>
+  <b>Sample runs of <code>main.py</code></b>
+  <pre class="out" data-sample="grades_main1"></pre>
+  <pre class="out" data-sample="grades_main2"></pre>
+  <b>Check your work</b>
+  <ul class="checks" data-key="t4">
+    <li><input type="checkbox"> Running <code>grades.py</code> prints your test results and does not ask for input.</li>
+    <li><input type="checkbox"> Running <code>main.py</code> with 88, 92, 79, -1 matches the first sample run.</li>
+    <li><input type="checkbox"> Entering <code>-1</code> first prints <code>No scores entered.</code> and nothing crashes.</li>
+    <li><input type="checkbox"> <code>min_max</code> returns a tuple, and <code>main.py</code> stores it as <code>low, high = grades.min_max(scores)</code>.</li>
+    <li><input type="checkbox"> No <code>sum()</code>, <code>min()</code>, or <code>max()</code> anywhere. Your code has comments.</li>
+  </ul>
+</section>
+
+<!-- ======================================================= 10 -->
+<section data-title="Submit and get help" data-group="Finish">
+  <div class="kicker">Step 10</div>
+  <h2>Submit, and get help</h2>
+  <h3>What to submit</h3>
+  <p>One zip file named <code>ch6_takehome_lastname_firstname.zip</code>, uploaded to the assignment on the course site before class on <b>Tuesday, December 1</b>. It contains your <code>ch6_takehome</code> folder:</p>
+  <pre class="tree">ch6_takehome/
+    hello.py
+    ch6_parking/
+        parking.py
+        main.py
+    ch6_paint/
+        paint.py
+        main.py
+    ch6_grades/
+        grades.py
+        main.py</pre>
+  <p><b>To make the zip:</b> on Windows, right-click the <code>ch6_takehome</code> folder and choose <b>Compress to ZIP file</b> (Windows 11) or <b>Send to &gt; Compressed (zipped) folder</b> (Windows 10). On a Mac, right-click the folder and choose <b>Compress</b>. Then rename the zip file.</p>
+  <p>Before you zip, run every <code>main.py</code> and every module one last time.</p>
+
+  <h3>If something goes wrong</h3>
+  <table>
+    <tr><th>Problem</th><th>What to do</th></tr>
+    <tr><td><code>ModuleNotFoundError: No module named 'parking'</code></td><td>The module and <code>main.py</code> must be in the <b>same folder</b>. Open that folder with <b>File &gt; Open Folder</b>.</td></tr>
+    <tr><td><code>NameError: name 'parking_fee' is not defined</code> in <code>main.py</code></td><td>Call it with the module name: <code>parking.parking_fee(3)</code>.</td></tr>
+    <tr><td><code>NameError</code> in a test line in the module</td><td>Test calls go at the <b>bottom</b>, after every <code>def</code>, under the main guard.</td></tr>
+    <tr><td>The guarded code never runs</td><td>Check the spelling: two underscores on each side, <code>"__main__"</code>.</td></tr>
+    <tr><td>Running a module asks for input</td><td>The <code>input()</code> lines belong in <code>main.py</code>, not in the module.</td></tr>
+    <tr><td>There is no Run Python File triangle</td><td>Install the Python extension, then press Ctrl+Shift+P (Cmd+Shift+P on a Mac) and run <b>Python: Select Interpreter</b>.</td></tr>
+    <tr><td><code>can't open file ... [Errno 2] No such file or directory</code> when you click Run, and the path in the message has extra quote marks</td><td>The folder path has a space in it (for example <code>OneDrive - Northern Kentucky University</code>). Move <code>ch6_takehome</code> to a folder with no spaces in its path, such as <code>C:\INF120</code>, then open it again with <b>File &gt; Open Folder</b>.</td></tr>
+    <tr><td>VS Code shows <b>Restricted Mode</b> in the bottom-left corner, and Run may not work</td><td>Click <b>Restricted Mode</b> and choose <b>Trust</b>. These are your own files.</td></tr>
+    <tr><td>You type an answer and nothing happens</td><td>Click inside the Terminal panel first, then type and press Enter.</td></tr>
+  </table>
+
+  <h3>If you can't install Python: use Colab</h3>
+  <p>Use this only if the setup handout didn't work for you. Colab can save <code>.py</code> files and run them.</p>
+  <ol class="plain">
+    <li>Make a new Colab notebook. Make one cell per file. Start each cell with <code>%%writefile</code> and the file name, then the file's code:
+      <pre class="snip">%%writefile parking.py
+# parking.py: parking garage fees (a module)
+...</pre>
+      Run the cell: it <b>saves</b> the file; it doesn't run it.</li>
+    <li>Run a file in its own cell with <code>%run</code>:
+      <pre class="snip">%run main.py</pre></li>
+    <li><b>Each time you change a file</b>: run its <code>%%writefile</code> cell again, choose <b>Runtime &gt; Restart session</b>, then run <code>%run main.py</code> again. Without the restart, the notebook keeps using the old version of the module.</li>
+    <li>Colab deletes the files when the session ends. To submit, open the <b>Files</b> panel on the left, download each <code>.py</code> file, put them in the folders shown above, and zip the <code>ch6_takehome</code> folder.</li>
+  </ol>
+</section>
+
+  </main>
+</div>
+
+<footer class="nav"><div class="wrap">
+  <button id="back" type="button">Back</button>
+  <span class="where" id="where"></span>
+  <button id="next" class="next" type="button">Next</button>
+</div></footer>
+
+<script>
+const DATA = {"versions": {"v1": {"main.py": "# main.py: the main program\nimport parking\n\nweek = [1, 3, 8, 0, 2]\nfor hours in week:\n    print(f\"{hours} hours: ${parking.parking_fee(hours)}\")\nprint(f\"Week total: ${parking.week_total(week)}\")\n", "parking.py": "# parking.py: parking garage fees (a module)\n\n\n# Fee for one stay: first hour free, then $3 per additional hour\ndef parking_fee(hours):\n    if hours <= 1:\n        return 0\n    return (hours - 1) * 3\n\n\n# Total fee for a list of stays\ndef week_total(hours_list):\n    total = 0\n    for hours in hours_list:\n        total += parking_fee(hours)\n    return total\n"}, "v2": {"main.py": "# main.py: the main program\nimport parking\n\nweek = [1, 3, 8, 0, 2]\nfor hours in week:\n    print(f\"{hours} hours: ${parking.parking_fee(hours)}\")\nprint(f\"Week total: ${parking.week_total(week)}\")\n", "parking.py": "# parking.py: parking garage fees (a module)\n\n\n# Fee for one stay: first hour free, then $3 per additional hour\ndef parking_fee(hours):\n    if hours <= 1:\n        return 0\n    return (hours - 1) * 3\n\n\n# Total fee for a list of stays\ndef week_total(hours_list):\n    total = 0\n    for hours in hours_list:\n        total += parking_fee(hours)\n    return total\n\n\n# Tests\nprint(\"parking_fee(1):\", parking_fee(1))\nprint(\"parking_fee(8):\", parking_fee(8))\nprint(\"week_total([1, 3]):\", week_total([1, 3]))\n"}, "v3": {"main.py": "# main.py: the main program\nimport parking\n\nweek = [1, 3, 8, 0, 2]\nfor hours in week:\n    print(f\"{hours} hours: ${parking.parking_fee(hours)}\")\nprint(f\"Week total: ${parking.week_total(week)}\")\n", "parking.py": "# parking.py: parking garage fees (a module)\n\n\n# Fee for one stay: first hour free, then $3 per additional hour\ndef parking_fee(hours):\n    if hours <= 1:\n        return 0\n    return (hours - 1) * 3\n\n\n# Total fee for a list of stays\ndef week_total(hours_list):\n    total = 0\n    for hours in hours_list:\n        total += parking_fee(hours)\n    return total\n\n\n# Tests: run only when this file is run directly\nif __name__ == \"__main__\":\n    print(\"parking_fee(1):\", parking_fee(1))\n    print(\"parking_fee(8):\", parking_fee(8))\n    print(\"week_total([1, 3]):\", week_total([1, 3]))\n"}, "v4": {"main.py": "# main.py: the main program\nimport parking\n\nif __name__ == \"__main__\":\n    week = [1, 3, 8, 0, 2]\n    for hours in week:\n        print(f\"{hours} hours: ${parking.parking_fee(hours)}\")\n    print(f\"Week total: ${parking.week_total(week)}\")\n", "parking.py": "# parking.py: parking garage fees (a module)\n\n\n# Fee for one stay: first hour free, then $3 per additional hour\ndef parking_fee(hours):\n    if hours <= 1:\n        return 0\n    return (hours - 1) * 3\n\n\n# Total fee for a list of stays\ndef week_total(hours_list):\n    total = 0\n    for hours in hours_list:\n        total += parking_fee(hours)\n    return total\n\n\n# Tests: run only when this file is run directly\nif __name__ == \"__main__\":\n    print(\"parking_fee(1):\", parking_fee(1))\n    print(\"parking_fee(8):\", parking_fee(8))\n    print(\"week_total([1, 3]):\", week_total([1, 3]))\n"}}, "traces": {"v1:main.py": [["line", "main.py", 2, "<module>", "__main__"], ["line", "parking.py", 5, "<module>", "parking"], ["line", "parking.py", 12, "<module>", "parking"], ["line", "main.py", 4, "<module>", "__main__"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["call", "parking.py", "parking_fee"], ["line", "parking.py", 6, "parking_fee", "parking"], ["line", "parking.py", 7, "parking_fee", "parking"], ["ret", "parking.py", "parking_fee", "0"], ["out", "1 hours: $0"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "3 hours: $6"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "8 hours: $21"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "0 hours: $0"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "2 hours: $3"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 7, "<module>", "__main__"], ["call", "parking.py", "week_total"], ["line", "parking.py", 13, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 16, "week_total", "parking"], ["ret", "parking.py", "week_total", "30"], ["out", "Week total: $30"], ["out", "\n"]], "v1:parking.py": [["line", "parking.py", 5, "<module>", "__main__"], ["line", "parking.py", 12, "<module>", "__main__"]], "v2:main.py": [["line", "main.py", 2, "<module>", "__main__"], ["line", "parking.py", 5, "<module>", "parking"], ["line", "parking.py", 12, "<module>", "parking"], ["line", "parking.py", 20, "<module>", "parking"], ["call", "parking.py", "parking_fee"], ["line", "parking.py", 6, "parking_fee", "parking"], ["line", "parking.py", 7, "parking_fee", "parking"], ["ret", "parking.py", "parking_fee", "0"], ["out", "parking_fee(1):"], ["out", " "], ["out", "0"], ["out", "\n"], ["line", "parking.py", 21, "<module>", "parking"], ["out", "parking_fee(8):"], ["out", " "], ["out", "21"], ["out", "\n"], ["line", "parking.py", 22, "<module>", "parking"], ["call", "parking.py", "week_total"], ["line", "parking.py", 13, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 16, "week_total", "parking"], ["ret", "parking.py", "week_total", "6"], ["out", "week_total([1, 3]):"], ["out", " "], ["out", "6"], ["out", "\n"], ["line", "main.py", 4, "<module>", "__main__"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "1 hours: $0"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "3 hours: $6"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "8 hours: $21"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "0 hours: $0"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "2 hours: $3"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 7, "<module>", "__main__"], ["out", "Week total: $30"], ["out", "\n"]], "v2:parking.py": [["line", "parking.py", 5, "<module>", "__main__"], ["line", "parking.py", 12, "<module>", "__main__"], ["line", "parking.py", 20, "<module>", "__main__"], ["call", "parking.py", "parking_fee"], ["line", "parking.py", 6, "parking_fee", "__main__"], ["line", "parking.py", 7, "parking_fee", "__main__"], ["ret", "parking.py", "parking_fee", "0"], ["out", "parking_fee(1):"], ["out", " "], ["out", "0"], ["out", "\n"], ["line", "parking.py", 21, "<module>", "__main__"], ["out", "parking_fee(8):"], ["out", " "], ["out", "21"], ["out", "\n"], ["line", "parking.py", 22, "<module>", "__main__"], ["call", "parking.py", "week_total"], ["line", "parking.py", 13, "week_total", "__main__"], ["line", "parking.py", 14, "week_total", "__main__"], ["line", "parking.py", 15, "week_total", "__main__"], ["line", "parking.py", 14, "week_total", "__main__"], ["line", "parking.py", 15, "week_total", "__main__"], ["line", "parking.py", 14, "week_total", "__main__"], ["line", "parking.py", 16, "week_total", "__main__"], ["ret", "parking.py", "week_total", "6"], ["out", "week_total([1, 3]):"], ["out", " "], ["out", "6"], ["out", "\n"]], "v3:main.py": [["line", "main.py", 2, "<module>", "__main__"], ["line", "parking.py", 5, "<module>", "parking"], ["line", "parking.py", 12, "<module>", "parking"], ["line", "parking.py", 20, "<module>", "parking"], ["line", "main.py", 4, "<module>", "__main__"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["call", "parking.py", "parking_fee"], ["line", "parking.py", 6, "parking_fee", "parking"], ["line", "parking.py", 7, "parking_fee", "parking"], ["ret", "parking.py", "parking_fee", "0"], ["out", "1 hours: $0"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "3 hours: $6"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "8 hours: $21"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "0 hours: $0"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["out", "2 hours: $3"], ["out", "\n"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 7, "<module>", "__main__"], ["call", "parking.py", "week_total"], ["line", "parking.py", 13, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 16, "week_total", "parking"], ["ret", "parking.py", "week_total", "30"], ["out", "Week total: $30"], ["out", "\n"]], "v3:parking.py": [["line", "parking.py", 5, "<module>", "__main__"], ["line", "parking.py", 12, "<module>", "__main__"], ["line", "parking.py", 20, "<module>", "__main__"], ["line", "parking.py", 21, "<module>", "__main__"], ["call", "parking.py", "parking_fee"], ["line", "parking.py", 6, "parking_fee", "__main__"], ["line", "parking.py", 7, "parking_fee", "__main__"], ["ret", "parking.py", "parking_fee", "0"], ["out", "parking_fee(1):"], ["out", " "], ["out", "0"], ["out", "\n"], ["line", "parking.py", 22, "<module>", "__main__"], ["out", "parking_fee(8):"], ["out", " "], ["out", "21"], ["out", "\n"], ["line", "parking.py", 23, "<module>", "__main__"], ["call", "parking.py", "week_total"], ["line", "parking.py", 13, "week_total", "__main__"], ["line", "parking.py", 14, "week_total", "__main__"], ["line", "parking.py", 15, "week_total", "__main__"], ["line", "parking.py", 14, "week_total", "__main__"], ["line", "parking.py", 15, "week_total", "__main__"], ["line", "parking.py", 14, "week_total", "__main__"], ["line", "parking.py", 16, "week_total", "__main__"], ["ret", "parking.py", "week_total", "6"], ["out", "week_total([1, 3]):"], ["out", " "], ["out", "6"], ["out", "\n"]], "v4:main.py": [["line", "main.py", 2, "<module>", "__main__"], ["line", "parking.py", 5, "<module>", "parking"], ["line", "parking.py", 12, "<module>", "parking"], ["line", "parking.py", 20, "<module>", "parking"], ["line", "main.py", 4, "<module>", "__main__"], ["line", "main.py", 5, "<module>", "__main__"], ["line", "main.py", 6, "<module>", "__main__"], ["line", "main.py", 7, "<module>", "__main__"], ["call", "parking.py", "parking_fee"], ["line", "parking.py", 6, "parking_fee", "parking"], ["line", "parking.py", 7, "parking_fee", "parking"], ["ret", "parking.py", "parking_fee", "0"], ["out", "1 hours: $0"], ["out", "\n"], ["line", "main.py", 6, "<module>", "__main__"], ["line", "main.py", 7, "<module>", "__main__"], ["out", "3 hours: $6"], ["out", "\n"], ["line", "main.py", 6, "<module>", "__main__"], ["line", "main.py", 7, "<module>", "__main__"], ["out", "8 hours: $21"], ["out", "\n"], ["line", "main.py", 6, "<module>", "__main__"], ["line", "main.py", 7, "<module>", "__main__"], ["out", "0 hours: $0"], ["out", "\n"], ["line", "main.py", 6, "<module>", "__main__"], ["line", "main.py", 7, "<module>", "__main__"], ["out", "2 hours: $3"], ["out", "\n"], ["line", "main.py", 6, "<module>", "__main__"], ["line", "main.py", 8, "<module>", "__main__"], ["call", "parking.py", "week_total"], ["line", "parking.py", 13, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 15, "week_total", "parking"], ["line", "parking.py", 14, "week_total", "parking"], ["line", "parking.py", 16, "week_total", "parking"], ["ret", "parking.py", "week_total", "30"], ["out", "Week total: $30"], ["out", "\n"]], "v4:parking.py": [["line", "parking.py", 5, "<module>", "__main__"], ["line", "parking.py", 12, "<module>", "__main__"], ["line", "parking.py", 20, "<module>", "__main__"], ["line", "parking.py", 21, "<module>", "__main__"], ["call", "parking.py", "parking_fee"], ["line", "parking.py", 6, "parking_fee", "__main__"], ["line", "parking.py", 7, "parking_fee", "__main__"], ["ret", "parking.py", "parking_fee", "0"], ["out", "parking_fee(1):"], ["out", " "], ["out", "0"], ["out", "\n"], ["line", "parking.py", 22, "<module>", "__main__"], ["out", "parking_fee(8):"], ["out", " "], ["out", "21"], ["out", "\n"], ["line", "parking.py", 23, "<module>", "__main__"], ["call", "parking.py", "week_total"], ["line", "parking.py", 13, "week_total", "__main__"], ["line", "parking.py", 14, "week_total", "__main__"], ["line", "parking.py", 15, "week_total", "__main__"], ["line", "parking.py", 14, "week_total", "__main__"], ["line", "parking.py", 15, "week_total", "__main__"], ["line", "parking.py", 14, "week_total", "__main__"], ["line", "parking.py", 16, "week_total", "__main__"], ["ret", "parking.py", "week_total", "6"], ["out", "week_total([1, 3]):"], ["out", " "], ["out", "6"], ["out", "\n"]]}, "samples": {"parking_main": "1 hours: $0\n3 hours: $6\n8 hours: $21\n0 hours: $0\n2 hours: $3\nWeek total: $30\n", "parking_mod": "parking_fee(1): 0\nparking_fee(8): 21\nweek_total([1, 3]): 6\n", "paint_mod": "wall_area(12, 13, 8): 400\ngallons_needed(12, 13, 8): 1.0\ngallons_needed(10, 10, 8): 0.8\n", "paint_main": "Room length (ft): 12\nRoom width (ft): 13\nWall height (ft): 8\nWall area: 400 sq ft\nPaint needed: 1.00 gallons\n", "grades_mod": "average([80, 90, 100]): 90.0\nmin_max([72, 95, 64]): (64, 95)\nletter_grade(89.5): B\nletter_grade(59): F\n", "grades_main1": "Score (-1 to stop): 88\nScore (-1 to stop): 92\nScore (-1 to stop): 79\nScore (-1 to stop): -1\nScores entered: 3\nAverage: 86.33 (B)\nLowest: 79\nHighest: 92\n", "grades_main2": "Score (-1 to stop): -1\nNo scores entered.\n"}, "added": {"v1": {}, "v2": {"main.py": [], "parking.py": [19, 20, 21, 22]}, "v3": {"main.py": [], "parking.py": [19, 20, 21, 22, 23]}, "v4": {"main.py": [4, 5, 6, 7, 8], "parking.py": []}}};
+const REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------------- storage (optional, never required) ---------------- */
+const store = {
+  get(k) { try { return localStorage.getItem("inf120ch6:" + k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem("inf120ch6:" + k, v); } catch (e) {} }
+};
+
+/* ---------------- Python syntax highlighting (instructor's theme) ---------------- */
+const KW = new Set(["return","if","elif","else","for","while","in","import","from","and","or","not","pass","True","False","None","global"]);
+const BI = new Set(["print","input","int","float","len","range","round","str"]);
+function esc(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function sp(cls, txt) { return '<span class="' + cls + '">' + esc(txt) + "</span>"; }
+function hl(line) {
+  let out = "", i = 0, prevWord = "";
+  while (i < line.length) {
+    const ch = line[i];
+    if (ch === "#") { out += sp("c", line.slice(i)); break; }
+    const isF = ch === "f" && line[i + 1] === '"';
+    if (ch === '"' || isF) {
+      if (isF) { out += sp("fp", "f"); i++; }
+      let j = i + 1, buf = '"';
+      while (j < line.length && line[j] !== '"') {
+        if (isF && line[j] === "{") {
+          out += sp("s", buf); buf = "";
+          let k = j + 1, depth = 1;
+          while (k < line.length && depth) { if (line[k] === "{") depth++; if (line[k] === "}") depth--; if (depth) k++; }
+          out += sp("cb", "{") + hl(line.slice(j + 1, k)) + sp("cb", "}");
+          j = k + 1; continue;
+        }
+        buf += line[j]; j++;
+      }
+      out += sp("s", buf + (j < line.length ? '"' : ""));
+      i = j + 1; continue;
+    }
+    if (/[A-Za-z_]/.test(ch)) {
+      let j = i; while (j < line.length && /[A-Za-z0-9_]/.test(line[j])) j++;
+      const w = line.slice(i, j);
+      let cls = "";
+      if (w === "def") cls = "kd";
+      else if (KW.has(w)) cls = "k";
+      else if (w === "__name__") cls = "dn";
+      else if (prevWord === "def" || line[j] === "(") cls = BI.has(w) ? "bi" : "fn";
+      out += cls ? sp(cls, w) : esc(w);
+      prevWord = w; i = j; continue;
+    }
+    if (/[0-9]/.test(ch)) {
+      let j = i; while (j < line.length && /[0-9.]/.test(line[j])) j++;
+      out += sp("num", line.slice(i, j)); i = j; continue;
+    }
+    if (/[=+\-*\/<>!%]/.test(ch)) { let j = i; while (/[=+\-*\/<>!%]/.test(line[j] || "")) j++; out += sp("op", line.slice(i, j)); i = j; prevWord = ""; continue; }
+    if (/[()\[\]{}]/.test(ch)) { out += sp("br", ch); i++; prevWord = ""; continue; }
+    if (ch !== " ") prevWord = "";
+    out += esc(ch); i++;
+  }
+  return out;
+}
+
+/* ---------------- the simulated VS Code lab ---------------- */
+const SPEEDS = { slow: 1.7, normal: 1, fast: 0.45 };
+function makeLab(host, version, runs, appear) {
+  const files = DATA.versions[version];
+  const added = DATA.added[version] || {};
+  const lab = document.createElement("div");
+  lab.className = "lab";
+  const order = ["main.py", "parking.py"];
+  const PY = '<svg class="pyi" viewBox="0 0 16 16" aria-hidden="true"><path d="M7.9 1C4.6 1 4.8 2.4 4.8 2.4v1.5H8v.5H3.4S1 4.1 1 7.9s2.1 3.6 2.1 3.6h1.2V9.8s-.1-2.1 2.1-2.1h3.5s2 0 2-2V2.9S12.2 1 7.9 1z" fill="#4a86c5"/><path d="M8.1 15c3.3 0 3.1-1.4 3.1-1.4v-1.5H8v-.5h4.6S15 11.9 15 8.1s-2.1-3.6-2.1-3.6h-1.2v1.7s.1 2.1-2.1 2.1H6.1s-2 0-2 2v2.8S3.8 15 8.1 15z" fill="#f2c94c"/></svg>';
+  const ICONS = [
+    '<path d="M6 3h7l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M13 3v4h4"/>',
+    '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>',
+    '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="7" r="2"/><path d="M6 7v10M18 9c0 5-6 4-11 8"/>',
+    '<path d="M7 4l12 8-12 8z"/>',
+    '<rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7" transform="rotate(10 16 8)"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/>'
+  ];
+  let ctl = '<div class="labctl"><span class="lbl">Try it:</span>';
+  runs.forEach(r => { ctl += '<button type="button" class="run" data-run="' + r + '">Run ' + r + "</button>"; });
+  ctl += '<button type="button" class="skip" disabled>Skip</button>';
+  ctl += '<label class="spd">Speed <select class="speed" aria-label="Animation speed">' +
+         '<option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select></label></div>';
+  let win = '<div class="vsc" role="group" aria-label="VS Code window with main.py and parking.py side by side">' +
+    '<div class="titlebar"><div class="lights"><i></i><i></i><i></i></div><div class="cmdc">&#x2315; ch6_parking</div><div></div></div>' +
+    '<div class="body"><div class="actbar" aria-hidden="true">' +
+    ICONS.map((p, i) => '<span class="' + (i === 0 ? "on" : "") + '"><svg viewBox="0 0 24 24">' + p + "</svg></span>").join("") +
+    '</div><div class="groups">';
+  order.forEach(f => {
+    const lines = files[f].replace(/\n$/, "").split("\n");
+    const add = new Set(added[f] || []);
+    win += '<div class="grp" data-file="' + f + '"><div class="tabs"><div class="tabx act">' + PY + "<span>" + f + '</span><span class="badge"></span><span class="x" aria-hidden="true">&times;</span></div>' +
+      '<div class="gact"><button type="button" class="playbtn" data-run="' + f + '" aria-label="Run Python File: ' + f + '">' +
+      '<svg viewBox="0 0 16 16"><path d="M4.5 2.8v10.4L13 8z"/></svg><svg class="chev" viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3"/></svg><span class="tip">Run Python File</span></button>' +
+      '<span class="gmore" aria-hidden="true">&middot;&middot;&middot;</span></div></div>' +
+      '<div class="crumbs">' + PY + "<span>" + f + ' &rsaquo; &hellip;</span></div><pre class="code">';
+    lines.forEach((ln, i) => {
+      const cls = "ln" + (add.has(i + 1) ? " add" : "") + (appear && !REDUCED ? " appear" : "");
+      const style = appear && !REDUCED ? ' style="animation-delay:' + (i * 35) + 'ms"' : "";
+      win += '<div class="' + cls + '" data-n="' + (i + 1) + '"' + style + '><span class="g">' + (add.has(i + 1) ? "+" : i + 1) + '</span><span class="src">' + (hl(ln) || " ") + "</span></div>";
+    });
+    win += "</pre></div>";
+  });
+  win += "</div></div>" +
+    '<div class="panel"><div class="ptabs" aria-hidden="true"><span>PROBLEMS</span><span>OUTPUT</span><span class="hide-sm">DEBUG CONSOLE</span><span class="on">TERMINAL</span><span class="hide-sm">PORTS</span><span class="pr"><span>&#x232A;_ Python</span><span>+</span><span>&times;</span></span></div>' +
+    '<div class="terminal"><pre></pre></div></div>' +
+    '<div class="statusbar" aria-hidden="true"><span>&#x2297; 0 &#x26A0; 0</span><span class="r"><span class="hide-sm">Ln 1, Col 1</span><span class="hide-sm">Spaces: 4</span><span class="hide-sm">UTF-8</span><span>{ } Python</span><span>Python 3.13</span></span></div></div>';
+  lab.innerHTML = ctl + win +
+    '<div class="narr" aria-live="polite"><span class="what">Ready.</span><span class="why">Click a Run button, or the &#9655; at the top of a file, as you would in VS Code.</span></div>';
+  host.appendChild(lab);
+
+  const term = lab.querySelector(".terminal pre");
+  const what = lab.querySelector(".narr .what");
+  const why = lab.querySelector(".narr .why");
+  const skipBtn = lab.querySelector(".skip");
+  const speedSel = lab.querySelector(".speed");
+  const runBtns = [...lab.querySelectorAll(".run, .playbtn")];
+  let token = 0, skipping = false;
+
+  function pane(f) { return lab.querySelector('.grp[data-file="' + f + '"]'); }
+  function lineEl(f, n) { return pane(f).querySelector('.ln[data-n="' + n + '"]'); }
+  function lineText(f, n) { return files[f].split("\n")[n - 1] || ""; }
+  function clearMarks() {
+    lab.querySelectorAll(".ln.cur").forEach(e => e.classList.remove("cur"));
+    lab.querySelectorAll(".pill").forEach(e => e.remove());
+    lab.querySelectorAll(".grp.focus").forEach(e => e.classList.remove("focus"));
+  }
+  function scrollInto(el) {
+    const box = el.closest(".code");
+    const top = el.offsetTop - box.offsetTop;
+    if (top < box.scrollTop + 10 || top > box.scrollTop + box.clientHeight - 30) box.scrollTop = top - box.clientHeight / 2;
+  }
+  function badge(f, val) {
+    lab.querySelectorAll(".badge").forEach(b => b.classList.remove("on"));
+    const b = pane(f).querySelector(".badge");
+    b.textContent = "__name__ = \"" + val + "\"";
+    b.classList.add("on");
+  }
+  function sleep(ms) {
+    const t = token;
+    return new Promise(res => {
+      if (skipping || REDUCED) return res(t);
+      setTimeout(() => res(t), ms * SPEEDS[speedSel.value]);
+    });
+  }
+  function termWrite(text) {
+    term.querySelectorAll(".fresh").forEach(e => e.classList.remove("fresh"));
+    const span = document.createElement("span");
+    span.className = "fresh"; span.textContent = text;
+    term.appendChild(span);
+    term.scrollTop = term.scrollHeight;
+  }
+
+  async function play(runFile) {
+    const my = ++token; skipping = false;
+    const top = lab.getBoundingClientRect().top + window.scrollY - 8;
+    window.scrollTo({ top, behavior: REDUCED ? "auto" : "smooth" });
+    const events = DATA.traces[version + ":" + runFile];
+    runBtns.forEach(b => b.disabled = true); skipBtn.disabled = false;
+    clearMarks();
+    lab.querySelectorAll(".badge").forEach(b => b.classList.remove("on"));
+    term.innerHTML = '<span class="prompt">ch6_parking %</span> <span class="cmd">/usr/local/bin/python3 ~/INF120/ch6_takehome/ch6_parking/' + runFile + "</span>\n";
+    what.textContent = "Running " + runFile; why.textContent = "";
+    await sleep(500); if (my !== token) return;
+    for (const ev of events) {
+      if (my !== token) return;
+      if (ev[0] === "line") {
+        const [, f, n, func, nm] = ev;
+        clearMarks();
+        const el = lineEl(f, n);
+        el.classList.add("cur"); pane(f).classList.add("focus"); scrollInto(el);
+        badge(f, nm);
+        const txt = lineText(f, n).trim();
+        let note = "";
+        if (func === "<module>" && txt.startsWith("def ")) note = "def stores the function. Its body runs only when the function is called.";
+        else if (txt.startsWith("import ")) note = "import runs " + txt.split(" ")[1] + ".py from top to bottom.";
+        else if (txt.startsWith("if __name__")) {
+          const t = nm === "__main__";
+          const pill = document.createElement("span");
+          pill.className = "pill " + (t ? "t" : "f");
+          pill.textContent = t ? "True" : "False";
+          el.querySelector(".src").appendChild(pill);
+          note = '__name__ is "' + nm + '", so the condition is ' + (t ? "True: the file was run directly, and the indented block runs." : "False: the file was imported, and the indented block is skipped.");
+        } else if (func !== "<module>") note = "Inside " + func + "().";
+        what.textContent = f + ", line " + n;
+        why.textContent = note;
+        await sleep(note ? 1100 : 520);
+      } else if (ev[0] === "call") {
+        why.textContent = "Calling " + ev[2] + "()...";
+        await sleep(250);
+      } else if (ev[0] === "ret") {
+        why.textContent = ev[2] + "() returns " + ev[3] + ".";
+        await sleep(650);
+      } else if (ev[0] === "out") {
+        termWrite(ev[1]);
+        if (ev[1].includes("\n")) await sleep(120);
+      }
+    }
+    if (my !== token) return;
+    clearMarks();
+    term.insertAdjacentHTML("beforeend", '<span class="prompt">ch6_parking %</span> ');
+    what.textContent = "Finished running " + runFile + ".";
+    why.textContent = "Run it again, or run the other file.";
+    runBtns.forEach(b => b.disabled = false); skipBtn.disabled = true;
+  }
+  runBtns.forEach(b => b.addEventListener("click", () => play(b.dataset.run)));
+  skipBtn.addEventListener("click", () => { skipping = true; });
+  return { stop() { token++; runBtns.forEach(b => b.disabled = false); skipBtn.disabled = true; } };
+}
+
+/* ---------------- samples, checklists ---------------- */
+document.querySelectorAll("[data-sample]").forEach(el => { el.textContent = DATA.samples[el.dataset.sample].replace(/\n$/, ""); });
+document.querySelectorAll(".checks").forEach(ul => {
+  ul.querySelectorAll("input").forEach((box, i) => {
+    const k = ul.dataset.key + ":" + i;
+    box.checked = store.get(k) === "1";
+    box.addEventListener("change", () => store.set(k, box.checked ? "1" : "0"));
+  });
+});
+
+/* ---------------- stepper ---------------- */
+const sections = [...document.querySelectorAll("main section")];
+const nav = document.getElementById("stepnav");
+const labs = new Map();
+let group = "";
+sections.forEach((s, i) => {
+  if (s.dataset.group !== group) {
+    group = s.dataset.group;
+    const g = document.createElement("li"); g.className = "group"; g.textContent = group; nav.appendChild(g);
+  }
+  const li = document.createElement("li");
+  li.innerHTML = '<button type="button"><span class="n">' + (i + 1) + '</span><span class="t">' + s.dataset.title.replace(/__name__/, "<code>__name__</code>") + "</span></button>";
+  li.querySelector("button").addEventListener("click", () => go(i));
+  nav.appendChild(li);
+});
+const navBtns = [...nav.querySelectorAll("button")];
+let cur = 0;
+function go(i, push = true) {
+  i = Math.max(0, Math.min(sections.length - 1, i));
+  labs.forEach(l => l.stop());
+  sections.forEach((s, j) => s.classList.toggle("show", j === i));
+  navBtns.forEach((b, j) => { b.classList.toggle("active", j === i); b.classList.toggle("done", j < i); });
+  const s = sections[i];
+  if (s.dataset.lab && !labs.has(i)) labs.set(i, makeLab(s.querySelector(".labhost"), s.dataset.lab, s.dataset.runs.split(","), s.dataset.appear === "1"));
+  document.getElementById("bar").style.width = ((i + 1) / sections.length * 100) + "%";
+  document.getElementById("back").disabled = i === 0;
+  const nx = document.getElementById("next");
+  nx.disabled = i === sections.length - 1;
+  nx.textContent = i === sections.length - 1 ? "Done" : "Next: " + sections[i + 1].dataset.title.replace(/<[^>]+>/g, "");
+  document.getElementById("where").textContent = "Step " + (i + 1) + " of " + sections.length;
+  cur = i;
+  if (push) { try { history.replaceState(null, "", "#step-" + (i + 1)); } catch (e) {} }
+  store.set("step", String(i));
+  window.scrollTo({ top: 0, behavior: REDUCED ? "auto" : "smooth" });
+}
+document.getElementById("back").addEventListener("click", () => go(cur - 1));
+document.getElementById("next").addEventListener("click", () => go(cur + 1));
+document.addEventListener("keydown", e => {
+  if (e.target.closest && e.target.closest("input, select, textarea")) return;
+  if (e.key === "ArrowRight") go(cur + 1);
+  if (e.key === "ArrowLeft") go(cur - 1);
+});
+const m = location.hash.match(/step-(\d+)/);
+go(m ? Number(m[1]) - 1 : Number(store.get("step") || 0), false);
+</script>
+</body>
+</html>
